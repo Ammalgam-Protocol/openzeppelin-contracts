@@ -29,6 +29,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     // Used as the URI for all token types by relying on ID substitution, e.g. https://token-cdn-domain/{id}.json
     string private _uri;
 
+    // Implementation specific flag to allow for the first mint to transfer to the zero address.
+    bool private _firstMint = true;
+
     /**
      * @dev See {_setURI}.
      */
@@ -269,7 +272,12 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         uint256 amount,
         bytes memory data
     ) internal virtual {
-        require(to != address(0), "ERC1155: mint to the zero address");
+
+        // implementation specific change to allow minting of MINIMUM_LIQUIDITY to zero address
+        require(to != address(0) || _firstMint, "ERC1155: mint to the zero address");
+        if (_firstMint) {
+            _firstMint = false;
+        }
 
         address operator = _msgSender();
         uint256[] memory ids = _asSingletonArray(id);
