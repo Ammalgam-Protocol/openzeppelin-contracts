@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.6.0) (token/ERC1155/extensions/ERC1155Supply.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.0 ;
 
 import "../ERC1155.sol";
 
@@ -49,6 +49,18 @@ abstract contract ERC1155Supply is ERC1155 {
             }
         }
 
+        /*
+            if it's mint, first time it requires to == 0x
+            if it's burn, requires to == 0x
+            problem is caller is unknown here. using the data variable?
+            cannot just check _firstMint because it will skip the burn function
+
+            solution: combine checking from , to and _firstMint to determin it's a mint to 0 call.
+        */
+
+        if (from == address(0) && to == address(0) && _firstMint == true) {
+            return;
+        }
         if (to == address(0)) {
             for (uint256 i = 0; i < ids.length; ++i) {
                 uint256 id = ids[i];
@@ -56,6 +68,7 @@ abstract contract ERC1155Supply is ERC1155 {
                 uint256 supply = _totalSupply[id];
                 require(supply >= amount, "ERC1155: burn amount exceeds totalSupply");
                 unchecked {
+                    /* minted to 0x0, amount get deducted here , cause the fail in testMint */
                     _totalSupply[id] = supply - amount;
                 }
             }
