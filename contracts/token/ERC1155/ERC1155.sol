@@ -30,7 +30,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     string private _uri;
 
     // Implementation specific flag to allow for the first mint to transfer to the zero address.
-    bool private _firstMint = true;
+    bool internal _firstMint = true;
 
     /**
      * @dev See {_setURI}.
@@ -273,10 +273,12 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         bytes memory data
     ) internal virtual {
 
+        bool _firstMint_ = _firstMint;      // saving gas
         // implementation specific change to allow minting of MINIMUM_LIQUIDITY to zero address
-        require(to != address(0) || _firstMint, "ERC1155: mint to the zero address");
-        if (_firstMint) {
-            _firstMint = false;
+        if ( to == address(0) ) {
+            if ( !_firstMint_ ) {
+                revert("ERC1155: mint to the zero address");
+            }
         }
 
         address operator = _msgSender();
@@ -284,7 +286,9 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
         uint256[] memory amounts = _asSingletonArray(amount);
 
         _beforeTokenTransfer(operator, address(0), to, ids, amounts, data);
-
+        if ( _firstMint_ ) {
+            _firstMint = false;
+        }
         _balances[id][to] += amount;
         emit TransferSingle(operator, address(0), to, id, amount);
 
